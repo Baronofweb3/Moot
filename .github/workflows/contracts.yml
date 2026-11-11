@@ -1,3 +1,4 @@
+
 name: contracts
 on:
   push:
@@ -8,8 +9,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
  
-      # Pinned to 1.86: newer rustc emits wasm features the NEAR runtime may reject.
-      - uses: dtolnay/rust-toolchain@1.86.0
+      # near-sdk 5.30 requires rustc >= 1.95.
+      - uses: dtolnay/rust-toolchain@1.95.0
         with:
           targets: wasm32-unknown-unknown
  
@@ -41,7 +42,16 @@ jobs:
           cp contracts/moot-core/res/moot_ft.wasm out/moot_ft.wasm
           ls -la out
  
+      - name: Inspect wasm for features the NEAR runtime may reject
+        run: |
+          sudo apt-get install -y wabt >/dev/null
+          for f in out/*.wasm; do
+            echo "== $f"; wasm-objdump -h "$f" | head -20
+            wasm2wat "$f" 2>/dev/null | grep -cE "memory.copy|memory.fill|table.copy|ref.null|i32.extend8_s" || true
+          done
+ 
       - uses: actions/upload-artifact@v4
         with:
           name: moot-wasm
           path: out/
+ 
