@@ -42,16 +42,17 @@ jobs:
           cp contracts/moot-core/res/moot_ft.wasm out/moot_ft.wasm
           ls -la out
  
-      - name: Inspect wasm for features the NEAR runtime may reject
-        run: |
-          sudo apt-get install -y wabt >/dev/null
-          for f in out/*.wasm; do
-            echo "== $f"; wasm-objdump -h "$f" | head -20
-            wasm2wat "$f" 2>/dev/null | grep -cE "memory.copy|memory.fill|table.copy|ref.null|i32.extend8_s" || true
-          done
- 
       - uses: actions/upload-artifact@v4
         with:
           name: moot-wasm
           path: out/
+ 
+      - name: Inspect wasm for features the NEAR runtime may reject (best effort)
+        continue-on-error: true
+        run: |
+          sudo apt-get update && sudo apt-get install -y wabt >/dev/null
+          for f in out/*.wasm; do
+            echo "== $f"; wasm-objdump -h "$f" | head -20
+            wasm2wat "$f" 2>/dev/null | grep -cE "memory.copy|memory.fill|table.copy|ref.null|i32.extend8_s" || true
+          done
  
