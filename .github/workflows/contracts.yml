@@ -1,29 +1,47 @@
 name: contracts
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+ 
+      # Pinned to 1.86: newer rustc emits wasm features the NEAR runtime may reject.
       - uses: dtolnay/rust-toolchain@1.86.0
-        with: { targets: wasm32-unknown-unknown }
-      - run: cargo install cargo-near --locked
+        with:
+          targets: wasm32-unknown-unknown
+ 
+      - name: Install cargo-near
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+ 
       - name: Build token wasm
         working-directory: contracts/moot-ft
         run: cargo near build non-reproducible-wasm
+ 
       - name: Embed token wasm into core
         run: |
           mkdir -p contracts/moot-core/res
-          cp target/near/moot_ft/moot_ft.wasm contracts/moot-core/res/moot_ft.wasm
-      - name: Unit tests (real wasm embedded)
+          F=$(find . -name moot_ft.wasm -path '*near*' | head -1)
+          echo "token wasm: $F"
+          cp "$F" contracts/moot-core/res/moot_ft.wasm
+ 
+      - name: Unit tests
         run: cargo test --workspace
+ 
       - name: Build core wasm
         working-directory: contracts/moot-core
         run: cargo near build non-reproducible-wasm
+ 
+      - name: Collect wasm
+        run: |
+          mkdir -p out
+          cp "$(find . -name moot_core.wasm -path '*near*' | head -1)" out/moot_core.wasm
+          cp contracts/moot-core/res/moot_ft.wasm out/moot_ft.wasm
+          ls -la out
+ 
       - uses: actions/upload-artifact@v4
         with:
           name: moot-wasm
-          path: |
-            target/near/moot_core/moot_core.wasm
-            target/near/moot_ft/moot_ft.wasm
- 
+          path: out/
