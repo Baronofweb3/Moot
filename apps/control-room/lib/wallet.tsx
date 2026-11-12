@@ -4,6 +4,7 @@ import { setupWalletSelector, WalletSelector } from "@near-wallet-selector/core"
 import { setupModal, WalletSelectorModal } from "@near-wallet-selector/modal-ui";
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
 import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
+import { actionCreators } from "@near-js/transactions";
 import { NETWORK } from "./config";
 
 export interface Call { receiverId: string; method: string; args: object; deposit?: string; gas: string }
@@ -56,7 +57,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Group consecutive calls to the same receiver into one transaction with several actions.
     const txs: { receiverId: string; actions: any[] }[] = [];
     for (const c of calls) {
-      const action = { type: "FunctionCall", params: { methodName: c.method, args: c.args, gas: c.gas, deposit: c.deposit ?? "0" } };
+      const action = actionCreators.functionCall(c.method, c.args, BigInt(c.gas), BigInt(c.deposit ?? "0"));
       const last = txs[txs.length - 1];
       if (last && last.receiverId === c.receiverId) last.actions.push(action);
       else txs.push({ receiverId: c.receiverId, actions: [action] });

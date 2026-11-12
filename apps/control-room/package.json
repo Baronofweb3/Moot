@@ -4,6 +4,7 @@
   "private": true,
   "scripts": { "dev": "next dev -p 3001", "build": "next build", "start": "next start", "test": "node --test lib/*.test.mjs" },
   "dependencies": {
+    "@near-js/transactions": "2.5.1",
     "@near-wallet-selector/core": "10.1.4",
     "@near-wallet-selector/meteor-wallet": "10.1.4",
     "@near-wallet-selector/modal-ui": "10.1.4",
